@@ -76,7 +76,6 @@ curl \
 
 curl --stderr /dev/null http://localhost:8080/api/v1/namespaces/default/pods \
 | jq '.items[] | { name: .metadata.name, status: .status} | del(.status.containerStatuses)'
-```
 
 
 cat << EOF > /tmp/img.yml

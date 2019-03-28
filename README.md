@@ -24,48 +24,21 @@ openssl req  -nodes -new -x509  -keyout sa.key -out sa.cert
 /home/marten/src/kubernetes/_output/bin/kube-controller-manager \
     --kubeconfig /var/lib/kubelet/kubeconfig -v=8 \
     --log-dir=/var/log/kubernetes --logtostderr=false \
-    --service-account-private-key-file=/tmp/sa.key
-
-/home/marten/src/kubernetes/_output/bin/kubelet \
-    -v=8 \
-    --kubeconfig /var/lib/kubelet/kubeconfig \
-    --fail-swap-on=false \
-    --log-dir=/var/log/kubernetes --logtostderr=false \
+    --service-account-private-key-file=/tmp/sa.key \
     --feature-gates=ProcMountType=true
 
+cat << EOF > /etc/kubernetes/kubelet.config
 kind: KubeletConfiguration
 apiVersion: kubelet.config.k8s.io/v1beta1
-address: xxx.xxx.xxx.xxx
-port: 10250
 staticPodPath: /etc/kubernetes/manifests
-nodeStatusUpdateFrequency: 10s
-tlsCertFile: /etc/kubernetes/ssl/node.pem
-tlsPrivateKeyFile: /etc/kubernetes/ssl/node-key.pem
-authentication:
-  x509:
-    clientCAFile: /etc/kubernetes/ssl/ca.pem
-  anonymous:
-    enabled: false
-cgroupDriver: cgroupfs
-cgroupsPerQOS: true
-maxPods: 110
-failSwapOn: true
-EnforceNodeAllocatable: ""
-clusterDNS: ["10.233.0.3"]
-clusterDomain: cluster.local
-resolverConfig: /etc/resolv.conf
-kubeReserved:
-  {
-    "cpu": "100m",
-    "memory": "256M"
-  }
-featureGates:
-  {
-    "PersistentLocalVolumes": false,
-    "VolumeScheduling": false,
-    "MountPropagation": false
-}
+failSwapOn: false
+EOF
 
+/home/marten/src/kubernetes/_output/bin/kubelet \
+    --kubeconfig /var/lib/kubelet/kubeconfig \
+    --log-dir=/var/log/kubernetes --alsologtostderr=false --logtostderr=false \
+    --config=/etc/kubernetes/kubelet.config \
+    -v=5 
 
 curl http://localhost:8080/api/v1/nodes
 curl --stderr /dev/null http://localhost:8080/api/v1/pods | jq '.items'

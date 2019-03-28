@@ -77,3 +77,76 @@ curl \
 curl --stderr /dev/null http://localhost:8080/api/v1/namespaces/default/pods \
 | jq '.items[] | { name: .metadata.name, status: .status} | del(.status.containerStatuses)'
 ```
+
+
+cat << EOF > /tmp/img.yml
+apiVersion: v1
+kind: Pod
+metadata:
+  labels:
+    run: img
+  name: img
+  annotations:
+    container.apparmor.security.beta.kubernetes.io/img: unconfined
+spec:
+  nodeName: thinkpad
+  securityContext:
+    runAsUser: 1000
+  initContainers:
+    # This container clones the desired git repo to the EmptyDir volume.
+    - name: git-clone
+      image: r.j3ss.co/jq
+      args:
+        - git
+        - clone
+        - --single-branch
+        - --
+        - https://github.com/jessfraz/dockerfiles
+        - /repo # Put it in the volume
+      securityContext:
+        procMount: "Unmasked"
+        allowPrivilegeEscalation: false
+        readOnlyRootFilesystem: true
+      volumeMounts:
+        - name: git-repo
+          mountPath: /repo
+  containers:
+  - image: r.j3ss.co/img
+    imagePullPolicy: Always
+    name: img
+    resources: {}
+    workingDir: /repo
+    command:
+    - img
+    - build
+    - -t
+    - irssi
+    - irssi/
+    securityContext:
+      procMount: "Unmasked"
+      capabilities:
+        add:
+        - SYS_ADMIN
+    volumeMounts:
+    - name: cache-volume
+      mountPath: /tmp
+    - name: git-repo
+      mountPath: /repo
+  volumes:
+  - name: cache-volume
+    emptyDir: {}
+  - name: git-repo
+    emptyDir: {}
+  restartPolicy: Never
+EOF
+  
+ruby -ryaml -rjson -e 'puts JSON.pretty_generate(YAML.load(ARGF))' < /tmp/img.yml > /tmp/img.json
+
+curl \
+-H 'Content-Type: application/json' \
+--stderr /dev/null \
+--request POST http://localhost:8080/api/v1/namespaces/default/pods \
+--data @/tmp/img.json | jq 'del(.spec.containers, .spec.volumes)'
+  
+curl --stderr /dev/null http://localhost:8080/api/v1/namespaces/default/pods \
+| jq '.items[] | { name: .metadata.name, status: .status} | del(.status.containerStatuses)'

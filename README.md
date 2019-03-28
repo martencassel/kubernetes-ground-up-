@@ -149,3 +149,97 @@ curl \
   
 curl --stderr /dev/null http://localhost:8080/api/v1/namespaces/default/pods \
 | jq '.items[] | { name: .metadata.name, status: .status} | del(.status.containerStatuses)'
+
+root@thinkpad:~# docker logs 5f7
+Cloning into '/repo'...
+fatal: unable to access 'https://github.com/jessfraz/dockerfiles/': Could not resolve host: github.com
+root@thinkpad:~# kubectl describe po/img
+Name:               img
+Namespace:          default
+Priority:           0
+PriorityClassName:  <none>
+Node:               thinkpad/172.20.10.4
+Start Time:         Thu, 28 Mar 2019 16:37:41 +0100
+Labels:             run=img
+Annotations:        container.apparmor.security.beta.kubernetes.io/img: unconfined
+Status:             Failed
+IP:                 172.17.0.3
+Init Containers:
+  git-clone:
+    Container ID:  docker://5f7becf7033ae7c57c31253b1016c9cff8b58d5c5422455e83a2d48ba964a8cc
+    Image:         r.j3ss.co/jq
+    Image ID:      docker-pullable://r.j3ss.co/jq@sha256:357e34b48cd1a6458242f8a2d494d776c286a8e161243ce0feba4f051cce4fe5
+    Port:          <none>
+    Host Port:     <none>
+    Args:
+      git
+      clone
+      --single-branch
+      --
+      https://github.com/jessfraz/dockerfiles
+      /repo
+    State:          Terminated
+      Reason:       Error
+      Exit Code:    128
+      Started:      Thu, 28 Mar 2019 16:37:46 +0100
+      Finished:     Thu, 28 Mar 2019 16:37:51 +0100
+    Ready:          False
+    Restart Count:  0
+    Environment:    <none>
+    Mounts:
+      /repo from git-repo (rw)
+      /var/run/secrets/kubernetes.io/serviceaccount from default-token-bsq2d (ro)
+Containers:
+  img:
+    Container ID:  
+    Image:         r.j3ss.co/img
+    Image ID:      
+    Port:          <none>
+    Host Port:     <none>
+    Command:
+      img
+      build
+      -t
+      irssi
+      irssi/
+    State:          Waiting
+      Reason:       PodInitializing
+    Ready:          False
+    Restart Count:  0
+    Environment:    <none>
+    Mounts:
+      /repo from git-repo (rw)
+      /tmp from cache-volume (rw)
+      /var/run/secrets/kubernetes.io/serviceaccount from default-token-bsq2d (ro)
+Conditions:
+  Type              Status
+  Initialized       False 
+  Ready             False 
+  ContainersReady   False 
+  PodScheduled      True 
+Volumes:
+  cache-volume:
+    Type:    EmptyDir (a temporary directory that shares a pod's lifetime)
+    Medium:  
+  git-repo:
+    Type:    EmptyDir (a temporary directory that shares a pod's lifetime)
+    Medium:  
+  default-token-bsq2d:
+    Type:        Secret (a volume populated by a Secret)
+    SecretName:  default-token-bsq2d
+    Optional:    false
+QoS Class:       BestEffort
+Node-Selectors:  <none>
+Tolerations:     node.kubernetes.io/not-ready:NoExecute for 300s
+                 node.kubernetes.io/unreachable:NoExecute for 300s
+Events:
+  Type     Reason             Age                   From               Message
+  ----     ------             ----                  ----               -------
+  Normal   Pulling            4m5s                  kubelet, thinkpad  Pulling image "r.j3ss.co/jq"
+  Normal   Pulled             4m1s                  kubelet, thinkpad  Successfully pulled image "r.j3ss.co/jq"
+  Normal   Created            4m1s                  kubelet, thinkpad  Created container git-clone
+  Normal   Started            4m1s                  kubelet, thinkpad  Started container git-clone
+  Warning  MissingClusterDNS  3m59s (x4 over 4m5s)  kubelet, thinkpad  pod: "img_default(6cc8938d-516f-11e9-80ef-e86a647ebe1b)". kubelet does not have ClusterDNS IP configured and cannot create Pod using "ClusterFirst" policy. Falling back to "Default" policy.
+root@thinkpad:~# 
+
+```

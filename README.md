@@ -242,4 +242,40 @@ Events:
   Warning  MissingClusterDNS  3m59s (x4 over 4m5s)  kubelet, thinkpad  pod: "img_default(6cc8938d-516f-11e9-80ef-e86a647ebe1b)". kubelet does not have ClusterDNS IP configured and cannot create Pod using "ClusterFirst" policy. Falling back to "Default" policy.
 root@thinkpad:~# 
 
+root@thinkpad:~# docker ps
+CONTAINER ID        IMAGE                  COMMAND                  CREATED             STATUS              PORTS               NAMES
+c0a4188c9c86        busybox                "/bin/sh -c 'while t…"   About an hour ago   Up About an hour                        k8s_log-truncator_nginx_default_432e00bd-5169-11e9-9612-e86a647ebe1b_0
+7beb93103815        nginx                  "nginx -g 'daemon of…"   About an hour ago   Up About an hour                        k8s_nginx_nginx_default_432e00bd-5169-11e9-9612-e86a647ebe1b_0
+d7a2d0f24b3c        k8s.gcr.io/pause:3.1   "/pause"                 About an hour ago   Up About an hour                        k8s_POD_nginx_default_432e00bd-5169-11e9-9612-e86a647ebe1b_0
+56cb44f69204        quay.io/coreos/etcd    "/usr/local/bin/etcd"    3 hours ago         Up 3 hours                              condescending_tesla
+root@thinkpad:~# docker exec -it c0a4 /bin/sh
+/ # ls
+bin     dev     etc     home    logdir  proc    root    sys     tmp     usr     var
+/ # cat /etc/resolv.conf 
+nameserver 127.0.0.53
+options edns0
+/ # 
+
+root@thinkpad:~# cat /etc/resolv.conf 
+# This file is managed by man:systemd-resolved(8). Do not edit.
+#
+# This is a dynamic resolv.conf file for connecting local clients to the
+# internal DNS stub resolver of systemd-resolved. This file lists all
+# configured search domains.
+#
+# Run "resolvectl status" to see details about the uplink DNS servers
+# currently in use.
+#
+# Third party programs must not access this file directly, but only through the
+# symlink at /etc/resolv.conf. To manage man:resolv.conf(5) in a different way,
+# replace this symlink by a static file or a different symlink.
+#
+# See man:systemd-resolved.service(8) for details about the supported modes of
+# operation for /etc/resolv.conf.
+
+nameserver 127.0.0.53
+options edns0
+root@thinkpad:~# 
+
+```
 ```

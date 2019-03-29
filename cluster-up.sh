@@ -8,6 +8,9 @@ FEATURE_GATES="ProcMountType=true"
 LOG_DIR=/var/log/kubernetes
 CONTROLPLANE_SUDO=$(echo "sudo -E")
 
+rm /tmp/sa.*
+openssl req -nodes -new -x509  -keyout /tmp/sa.key -out /tmp/sa.cert -subj '/CN=www.mydom.com/O=My Company Name LTD./C=US'
+
 kill `pidof kube-apiserver`
 kill `pidof kube-controller-manager`
 kill `pidof kube-scheduler`
@@ -87,6 +90,8 @@ start_apiserver
 start_controller_manager
 start_kubescheduler
 start_kubelet
+
+kubectl get componentstatuses
 
 kubectl -v=8 get node
 curl http://localhost:8080/api/v1/nodes

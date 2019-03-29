@@ -8,6 +8,10 @@ FEATURE_GATES="ProcMountType=true"
 LOG_DIR=/var/log/kubernetes
 CONTROLPLANE_SUDO=$(echo "sudo -E")
 
+DNS_DOMAIN="cluster.local"
+DNS_SERVER_IP"10.0.0.10"
+AUTHORIZATION_MODE="Node,RBAC"
+
 rm /tmp/sa.*
 openssl req -nodes -new -x509  -keyout /tmp/sa.key -out /tmp/sa.cert -subj '/CN=www.mydom.com/O=My Company Name LTD./C=US'
 
@@ -28,7 +32,12 @@ function start_apiserver {
     APISERVER_LOG=${LOG_DIR}/kube-apiserver.log
     touch $APISERVER_LOG
 
-    ${CONTROLPLANE_SUDO} "${GO_OUT}/kube-apiserver" \
+    authorizer_arg=""
+    if [[ -n "${AUTHORIZATION_MODE}" ]]; then
+      authorizer_arg="--authorization-mode=${AUTHORIZATION_MODE} "
+    fi
+
+    ${CONTROLPLANE_SUDO} "${GO_OUT}/kube-apiserver" ${authorizer_arg} \
     --v=${LOG_LEVEL} \
     --etcd-servers="http://${ETCD_HOST}:${ETCD_PORT}" \
     --feature-gates="${FEATURE_GATES}" > "${APISERVER_LOG}" 2>&1 &
@@ -42,6 +51,30 @@ function start_controller_manager {
     --service-account-private-key-file="${SERVICE_ACCOUNT_KEY}" \
     --feature-gates="${FEATURE_GATES}" \
     --master="http://localhost:8080" > "${CTRLMGR_LOG}" 2>&1 &
+}
+
+function start_kubeproxy {
+    echo "Starting kubeproxy"
+
+    cat <<EOF > /tmp/kube-proxy.kubeconfig
+apiVersion: v1
+clusters:
+- cluster:
+    server: http://127.0.0.1:8080
+EOF
+
+    PROXY_LOG=${LOG_DIR}/kube-proxy.log
+    cat <<EOF > /tmp/kube-proxy.yml
+apiVersion: kubeproxy.config.k8s.io/v1alpha1
+kind: KubeProxyConfiguration
+clientConnection:
+  kubeconfig: /tmp/kube-proxy.kubeconfig
+EOF
+
+    sudo "${GO_OUT}/kube-proxy" \
+    -v=${LOG_LEVEL} \
+    --config=/tmp/kube-proxy.yml \
+    --master="http://localhost:8080" > "${PROXY_LOG}" 2>&1 &
 }
 
 function start_kubescheduler {
@@ -88,6 +121,8 @@ echo "Starting services now!"
 start_etcd
 start_apiserver
 start_controller_manager
+
+start_kubeproxy
 start_kubescheduler
 start_kubelet
 
